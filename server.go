@@ -25,6 +25,7 @@ func New(archive *Archive) *Server {
 
 func (s *Server) registerHandlers() {
 	s.router.GET("/view", s.handleView)
+	s.router.GET("/media", s.handleMedia)
 }
 
 func (s *Server) Run(addr string, port int) error {
@@ -76,4 +77,19 @@ func (s *Server) handleView(c *gin.Context) {
 	} else {
 		c.Status(http.StatusNotFound)
 	}
+}
+
+func (s *Server) handleMedia(c *gin.Context) {
+	path := c.Query("path")
+
+	if media, ok := s.archive.instance.(interface {
+		GetMedia(path string) (contentType string, data []byte, found bool)
+	}); ok {
+		contentType, data, found := media.GetMedia(path)
+		if found {
+			c.Data(http.StatusOK, contentType, data)
+			return
+		}
+	}
+	c.Status(http.StatusNotFound)
 }
